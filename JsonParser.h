@@ -11,29 +11,7 @@
 #include "marray.h"
 #include "string.h"
 
-struct JSON_Tree;
-
 enum Json_Type{ JNONE,JLIST, JDICTIONARY, JARRAY };
-
-struct JSON_Branch
-{
-	int type;
-	char* text;
-	char* value;
-	struct JSON_Branch *prev;
-	struct JSON_Branch *next;
-	struct JSON_Tree *subTree;
-};
-
-
-struct JSON_Tree
-{
-	int type;
-	struct JSON_Branch *root;
-	struct JSON_Branch *current;
-	struct JSON_Tree *prevTree;
-	struct JSON_Tree *subTree;
-};
 
 struct Json_Branch
 {
@@ -49,20 +27,6 @@ struct Json_Branch
 	struct Json_Branch *prevBranch;
 	struct Json_Branch *subBranch;
 };
-
-/*
-struct JSON_Branch
-{
-	int type;
-	char* text;
-	char* value;
-	struct JSON_Branch* root;
-	struct JSON_Branch* current;
-	struct JSON_Branch* next;
-	struct JSON_Branch* branch;
-};
-*/
-
 
 enum JSON_Token_Type
 {
@@ -94,16 +58,8 @@ struct JSON_Tokenizer
 void JSON_Parse(char *json, struct Json_Branch* jBranch, struct Error_Handler *error);
 struct Json_Branch* Json_Find(struct Json_Branch* branch,struct array* arrayOfSearch);
 struct Json_Branch *Json_DelTree(struct Json_Branch* branch);
-char*  JSON_GetValueFromKey(struct JSON_Tree* tree, struct array* list);
-struct JSON_Branch *JSON_DelBranch(struct JSON_Branch* branch);
-inline void ParseJson(char* Json, struct JSON_Tree* jsonTree, struct Error_Handler *error);
 struct JSON_Token GetJSONToken(struct JSON_Tokenizer *jsonTokenizer);
-void JSON_AddBranch(struct JSON_Tree *jsonTree,int type, char* text);
-void JSON_AddTree(struct JSON_Branch* branch, int type);
-void JSON_AddTree2(struct JSON_Tree* tree, int type);
-void DelTree(struct JSON_Tree *tree);
 struct Json_Branch* Json_DelBranch(struct Json_Branch* branch);
-void DelPointerTree(struct JSON_Tree *tree);
 void Json_AddBranch(struct Json_Branch* branch, enum Json_Type type, char* key, char* value);
 void Json_Free(struct Json_Branch* branch);
 
@@ -273,7 +229,6 @@ void JSON_Parse(char *json, struct Json_Branch* jBranch, struct Error_Handler *e
 								break;
 							}
 					}
-					//current->current->value = CreateString(val);
 
 					isKey = false; 
 				}
@@ -283,41 +238,6 @@ void JSON_Parse(char *json, struct Json_Branch* jBranch, struct Error_Handler *e
 			{
 				if (isKey == true)
 				{
-					/*
-					   char* val=NULL;
-					   char* tempVal=NULL;
-
-					   jToken = GetJSONToken(&jTokenizer);
-
-
-					   while (jToken.type != NEXT && jToken.type != STRING_TERM)
-					   {
-
-					   char v[3]={0};
-					   v[0] = jToken.token;
-
-
-					   if (val == NULL)
-					   {
-					   val = CreateString(v);
-
-					   } else {
-					   tempVal = CatString(val, v);
-
-					   Free(val);
-					   val=NULL;
-
-					   val = CreateString(tempVal);
-
-					   Free(tempVal);
-					   tempVal=NULL;
-					   }
-
-					   jToken = GetJSONToken(&jTokenizer);
-					   }
-					   printf("%s\n",val);
-					//current->current->value = CreateString(val);
-					 */
 
 					isKey = false; 
 				}
@@ -551,75 +471,6 @@ struct JSON_Token GetJSONToken(struct JSON_Tokenizer *jsonTokenizer)
 	};
 
 	return jsonTokenResults;
-}
-
-void JSON_AddBranch(struct JSON_Tree *jsonTree, int type,  char* text)
-{
-	if (jsonTree->root ==NULL)
-	{
-		jsonTree->root = (struct JSON_Branch*) Memory(struct JSON_Branch);
-		assert(jsonTree->root);
-		jsonTree->root->prev= NULL;
-		jsonTree->root->type= type;
-		jsonTree->root->text= text;
-		jsonTree->root->value= NULL;
-		jsonTree->root->next = NULL;
-		jsonTree->root->subTree = NULL;
-		jsonTree->current = jsonTree->root;
-	} else {
-		assert(jsonTree->current);
-
-		jsonTree->current->next = (struct JSON_Branch*) Memory(struct JSON_Branch);
-
-		assert(jsonTree->current->next);
-
-		jsonTree->current->next->type= type;
-		jsonTree->current->next->text = text;
-		jsonTree->current->next->value = NULL;
-		jsonTree->current->next->next = NULL;
-		jsonTree->current->next->subTree = NULL;
-		jsonTree->current->next->prev= jsonTree->current;
-		jsonTree->current = jsonTree->current->next;
-	}
-}
-
-void JSON_AddTree(struct JSON_Branch* branch, int type)
-{
-	branch->subTree= (struct JSON_Tree*) Memory(struct JSON_Tree);
-
-	assert(branch->subTree);
-
-	branch->subTree->type = type;
-	branch->subTree->root = NULL;
-	branch->subTree->current = NULL;
-	branch->subTree->prevTree = NULL;
-	branch->subTree->subTree=NULL;
-}
-
-void JSON_AddTree2(struct JSON_Tree* tree, int type)
-{
-	tree->subTree= (struct JSON_Tree*) Memory(struct JSON_Tree);
-	
-	assert(tree->subTree);
-
-	tree->subTree->type = type;
-	tree->subTree->root = NULL;
-	tree->subTree->prevTree = NULL;
-	tree->subTree->current = NULL;
-	tree->subTree->subTree=NULL;
-}
-
-
-struct JSON_Branch *GetCurrentBranch(struct JSON_Tree* tree)
-{
-	for (struct JSON_Branch* iter=tree->root;iter != NULL;iter = iter->next)
-	{
-		if (iter->next == NULL)
-		{
-			return iter;
-		}
-	}
-	return NULL;
 }
 
 struct Json_Branch *Json_DelTree(struct Json_Branch* branch)
