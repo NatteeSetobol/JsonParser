@@ -39,7 +39,8 @@ enum JSON_Token_Type
 	SPLITTER,
 	NEXT,
 	SPACE,
-	STRING_TERM
+	STRING_TERM,
+	ENTER
 };
 
 struct JSON_Token
@@ -63,6 +64,25 @@ struct Json_Branch* Json_DelBranch(struct Json_Branch* branch);
 void Json_AddBranch(struct Json_Branch* branch, enum Json_Type type, char* key, char* value);
 void Json_Free(struct Json_Branch* branch);
 
+struct Json_Branch *AddSubBranch(struct Json_Branch* realCurrent, enum Json_Type type)
+{
+	struct Json_Branch* subBranch = (struct Json_Branch*) Memory(struct Json_Branch);
+	subBranch->type=type;
+	subBranch->key=NULL;
+	subBranch->value=NULL;
+	subBranch->head=NULL;
+	subBranch->current=NULL;
+	subBranch->prevBranch=realCurrent;
+	subBranch->subBranch=NULL;
+	subBranch->head=NULL;
+	subBranch->current=NULL;
+
+	return subBranch;
+	//current = current->subBranch;
+	
+}
+
+
 void JSON_Parse(char *json, struct Json_Branch* jBranch, struct Error_Handler *error)
 {
 	struct JSON_Tokenizer jTokenizer={0};
@@ -84,150 +104,161 @@ void JSON_Parse(char *json, struct Json_Branch* jBranch, struct Error_Handler *e
 		{
 			case SPLITTER:
 			{
-
 				if (isKey == true)
 				{
-					
-					   char* val=NULL;
-					   char* tempVal=NULL;
+					char* val=NULL;
+					char* tempVal=NULL;
 
-					   jToken = GetJSONToken(&jTokenizer);
+					jToken = GetJSONToken(&jTokenizer);
 
-					   switch(jToken.type)
-					   {
-						   case LIST_START:
-							   {
-								   struct Json_Branch *realCurrent=NULL;
-								   realCurrent = current;
+					switch(jToken.type)
+					{
+						case ENTER:
+						case SPACE:
+						{
+							break;
+						}
+						case LIST_START:
+						{
+							struct Json_Branch *realCurrent=NULL;
+							realCurrent = current;
 
-								   if (isKey == true) 
-								   {
-									   current = current->current;
-									   isKey = false;
-								   }
+							if (isKey == true) 
+							{
+								current = current->current;
+								isKey = false;
+							}
 
-								   if (current->type == JARRAY)
-								   {
-									   Json_AddBranch( current ,JLIST, NULL, NULL);
-									   current->current->prevBranch = current;
-									   current = current->current;
-
-								   }
-
-								   current->subBranch = (struct Json_Branch*) Memory(struct Json_Branch);
-								   current->subBranch->type=JLIST;
-								   current->subBranch->key=NULL;
-								   current->subBranch->value=NULL;
-								   current->subBranch->head=NULL;
-								   current->subBranch->current=NULL;
-								   current->subBranch->prevBranch=realCurrent;
-								   current->subBranch->subBranch=NULL;
-								   current->subBranch->head=NULL;
-								   current->subBranch->current=NULL;
-								   current = current->subBranch;
-								   //}
-								   break;
-					   }
-					case ARRAY_START:
-					   {
-						   struct Json_Branch *realCurrent=NULL;
-								realCurrent = current;
-
-								if (isKey == true) 
-								{
-									current = current->current;
-									isKey = false;
-								}
-
-								current->subBranch = (struct Json_Branch*) Memory(struct Json_Branch);
-								current->subBranch->type=JARRAY;
-								current->subBranch->key=NULL;
-								current->subBranch->value=NULL;
-								current->subBranch->head= NULL;
-								current->subBranch->current=NULL;
-								current->subBranch->prevBranch=realCurrent;
-								current->subBranch->subBranch=NULL;
-								current->subBranch->head=NULL;
-								current->subBranch->current=NULL;
-								current = current->subBranch;
-								break;
+							if (current->type == JARRAY)
+							{
+								Json_AddBranch( current ,JLIST, NULL, NULL);
+								current->current->prevBranch = current;
+								current = current->current;
 
 							}
-							default:
+
+
+							//   current->subBranch = AddSubBranch(realCurrent,JLIST);
+							//  current = current->subBranch;
+
+							current->subBranch = (struct Json_Branch*) Memory(struct Json_Branch);
+							current->subBranch->type=JLIST;
+							current->subBranch->key=NULL;
+							current->subBranch->value=NULL;
+							current->subBranch->head=NULL;
+							current->subBranch->current=NULL;
+							current->subBranch->prevBranch=realCurrent;
+							current->subBranch->subBranch=NULL;
+							current->subBranch->head=NULL;
+							current->subBranch->current=NULL;
+							current = current->subBranch;
+
+						
+							break;
+						}
+						case ARRAY_START:
+						{
+							struct Json_Branch *realCurrent=NULL;
+							realCurrent = current;
+
+							if (isKey == true) 
 							{
-								if (jToken.type == IDENTIFIER)
+								current = current->current;
+								isKey = false;
+							}
+
+							//current->subBranch = AddSubBranch(realCurrent,JARRAY);
+							//current = current->subBranch;
+
+							current->subBranch = (struct Json_Branch*) Memory(struct Json_Branch);
+							current->subBranch->type=JARRAY;
+							current->subBranch->key=NULL;
+							current->subBranch->value=NULL;
+							current->subBranch->head= NULL;
+							current->subBranch->current=NULL;
+							current->subBranch->prevBranch=realCurrent;
+							current->subBranch->subBranch=NULL;
+							current->subBranch->head=NULL;
+							current->subBranch->current=NULL;
+							current = current->subBranch;
+							break;
+
+						}
+						default:
+						{
+							if (jToken.type == IDENTIFIER)
+							{
+
+								jToken = GetJSONToken(&jTokenizer);
+								while (jToken.type != IDENTIFIER && jToken.type != STRING_TERM)
 								{
+									char v[3]={0};
+									v[0] = jToken.token;
+
+
+									if (val == NULL)
+									{
+										val = S32(v);
+
+									} else {
+										tempVal = S32Cat(val,1, v);
+
+										Free(val);
+										val=NULL;
+
+										val = S32(tempVal);
+
+										Free(tempVal);
+										tempVal=NULL;
+									}
 
 									jToken = GetJSONToken(&jTokenizer);
-									while (jToken.type != IDENTIFIER && jToken.type != STRING_TERM)
-									{
-										char v[3]={0};
-										v[0] = jToken.token;
-
-
-										if (val == NULL)
-										{
-											val = S32(v);
-
-										} else {
-											tempVal = S32Cat(val,1, v);
-
-											Free(val);
-											val=NULL;
-
-											val = S32(tempVal);
-
-											Free(tempVal);
-											tempVal=NULL;
-										}
-
-										jToken = GetJSONToken(&jTokenizer);
-									}
-
-								} else {
-									while (jToken.type !=LIST_END && jToken.type != NEXT && jToken.type != STRING_TERM)
-									{
-										char v[3]={0};
-										v[0] = jToken.token;
-
-
-										if (val == NULL)
-										{
-											val = S32(v);
-
-										} else {
-											tempVal = S32Cat(val,1, v);
-
-											Free(val);
-											val=NULL;
-
-											val = S32(tempVal)
-
-											if (StrCmp(val,"null"))
-											{
-												int breakhere = 0;
-											}
-
-											Free(tempVal);
-											tempVal=NULL;
-										}
-
-										jToken = GetJSONToken(&jTokenizer);
-									}
 								}
 
-								if (val)
+							} else {
+								while (jToken.type !=LIST_END && jToken.type != NEXT && jToken.type != STRING_TERM)
 								{
-									current->current->value = S32(val);
-									Free(val);
+									char v[3]={0};
+									v[0] = jToken.token;
 
-									if (jToken.type == LIST_END)
+
+									if (val == NULL)
 									{
-										jTokenizer.at--;
+										val = S32(v);
+
+									} else {
+										tempVal = S32Cat(val,1, v);
+
+										Free(val);
+										val=NULL;
+
+										val = S32(tempVal)
+
+										if (StrCmp(val,"null"))
+										{
+											int breakhere = 0;
+										}
+
+										Free(tempVal);
+										tempVal=NULL;
 									}
+
+									jToken = GetJSONToken(&jTokenizer);
 								}
-								break;
 							}
+
+							if (val)
+							{
+								current->current->value = S32(val);
+								Free(val);
+
+								if (jToken.type == LIST_END)
+								{
+									jTokenizer.at--;
+								}
+							}
+							break;
+						}
 					}
 
 					isKey = false; 
@@ -266,6 +297,9 @@ void JSON_Parse(char *json, struct Json_Branch* jBranch, struct Error_Handler *e
 					
 				}
 
+				//current->subBranch = AddSubBranch(realCurrent,JLIST);
+				//current = current->subBranch;
+				
 				current->subBranch = (struct Json_Branch*) Memory(struct Json_Branch);
 				current->subBranch->type=JLIST;
 				current->subBranch->key=NULL;
@@ -277,7 +311,7 @@ void JSON_Parse(char *json, struct Json_Branch* jBranch, struct Error_Handler *e
 				current->subBranch->head=NULL;
 				current->subBranch->current=NULL;
 				current = current->subBranch;
-				//}
+				
 				break;
 			}
 			case ARRAY_START:
@@ -291,6 +325,10 @@ void JSON_Parse(char *json, struct Json_Branch* jBranch, struct Error_Handler *e
 					isKey = false;
 				}
 
+				//current->subBranch = AddSubBranch(realCurrent,JARRAY);
+				//current = current->subBranch;
+
+				
 				current->subBranch = (struct Json_Branch*) Memory(struct Json_Branch);
 				current->subBranch->type=JARRAY;
 				current->subBranch->key=NULL;
@@ -302,7 +340,7 @@ void JSON_Parse(char *json, struct Json_Branch* jBranch, struct Error_Handler *e
 				current->subBranch->head=NULL;
 				current->subBranch->current=NULL;
 				current = current->subBranch;
-
+				
 				break;
 			}
 			case LIST_END:
@@ -316,7 +354,6 @@ void JSON_Parse(char *json, struct Json_Branch* jBranch, struct Error_Handler *e
 			}
 			case ARRAY_END:
 			{
-				
 				if (isKey == true) isKey = false;
 
 				if (current->prevBranch)
@@ -460,6 +497,11 @@ struct JSON_Token GetJSONToken(struct JSON_Tokenizer *jsonTokenizer)
 		case ':':
 		{
 			jsonTokenResults.type = SPLITTER;
+			break;
+		}
+		case '\n':
+		{
+			jsonTokenResults.type = ENTER;
 			break;
 		}
 		case ',':
