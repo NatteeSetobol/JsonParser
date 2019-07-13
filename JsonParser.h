@@ -63,6 +63,7 @@ struct JSON_Token GetJSONToken(struct JSON_Tokenizer *jsonTokenizer);
 struct Json_Branch* Json_DelBranch(struct Json_Branch* branch);
 void Json_AddBranch(struct Json_Branch* branch, enum Json_Type type, char* key, char* value);
 void Json_Free(struct Json_Branch* branch);
+void GetBranchType(struct Json_Branch *branch);
 
 struct Json_Branch *AddSubBranch(struct Json_Branch* realCurrent, enum Json_Type type)
 {
@@ -78,8 +79,6 @@ struct Json_Branch *AddSubBranch(struct Json_Branch* realCurrent, enum Json_Type
 	subBranch->current=NULL;
 
 	return subBranch;
-	//current = current->subBranch;
-	
 }
 
 
@@ -108,7 +107,9 @@ void JSON_Parse(char *json, struct Json_Branch* jBranch, struct Error_Handler *e
 				{
 					char* val=NULL;
 					char* tempVal=NULL;
-
+					
+					do
+					{
 					jToken = GetJSONToken(&jTokenizer);
 
 					switch(jToken.type)
@@ -137,23 +138,8 @@ void JSON_Parse(char *json, struct Json_Branch* jBranch, struct Error_Handler *e
 
 							}
 
-
-							//   current->subBranch = AddSubBranch(realCurrent,JLIST);
-							//  current = current->subBranch;
-
-							current->subBranch = (struct Json_Branch*) Memory(struct Json_Branch);
-							current->subBranch->type=JLIST;
-							current->subBranch->key=NULL;
-							current->subBranch->value=NULL;
-							current->subBranch->head=NULL;
-							current->subBranch->current=NULL;
-							current->subBranch->prevBranch=realCurrent;
-							current->subBranch->subBranch=NULL;
-							current->subBranch->head=NULL;
-							current->subBranch->current=NULL;
+							current->subBranch = AddSubBranch(realCurrent,JLIST);
 							current = current->subBranch;
-
-						
 							break;
 						}
 						case ARRAY_START:
@@ -167,19 +153,7 @@ void JSON_Parse(char *json, struct Json_Branch* jBranch, struct Error_Handler *e
 								isKey = false;
 							}
 
-							//current->subBranch = AddSubBranch(realCurrent,JARRAY);
-							//current = current->subBranch;
-
-							current->subBranch = (struct Json_Branch*) Memory(struct Json_Branch);
-							current->subBranch->type=JARRAY;
-							current->subBranch->key=NULL;
-							current->subBranch->value=NULL;
-							current->subBranch->head= NULL;
-							current->subBranch->current=NULL;
-							current->subBranch->prevBranch=realCurrent;
-							current->subBranch->subBranch=NULL;
-							current->subBranch->head=NULL;
-							current->subBranch->current=NULL;
+							current->subBranch = AddSubBranch(realCurrent,JARRAY);
 							current = current->subBranch;
 							break;
 
@@ -260,6 +234,7 @@ void JSON_Parse(char *json, struct Json_Branch* jBranch, struct Error_Handler *e
 							break;
 						}
 					}
+					} while (jToken.type == SPACE);
 
 					isKey = false; 
 				}
@@ -297,21 +272,8 @@ void JSON_Parse(char *json, struct Json_Branch* jBranch, struct Error_Handler *e
 					
 				}
 
-				//current->subBranch = AddSubBranch(realCurrent,JLIST);
-				//current = current->subBranch;
-				
-				current->subBranch = (struct Json_Branch*) Memory(struct Json_Branch);
-				current->subBranch->type=JLIST;
-				current->subBranch->key=NULL;
-				current->subBranch->value=NULL;
-				current->subBranch->head=NULL;
-				current->subBranch->current=NULL;
-				current->subBranch->prevBranch=realCurrent;
-				current->subBranch->subBranch=NULL;
-				current->subBranch->head=NULL;
-				current->subBranch->current=NULL;
+				current->subBranch = AddSubBranch(realCurrent,JLIST);
 				current = current->subBranch;
-				
 				break;
 			}
 			case ARRAY_START:
@@ -325,22 +287,9 @@ void JSON_Parse(char *json, struct Json_Branch* jBranch, struct Error_Handler *e
 					isKey = false;
 				}
 
-				//current->subBranch = AddSubBranch(realCurrent,JARRAY);
-				//current = current->subBranch;
-
-				
-				current->subBranch = (struct Json_Branch*) Memory(struct Json_Branch);
-				current->subBranch->type=JARRAY;
-				current->subBranch->key=NULL;
-				current->subBranch->value=NULL;
-				current->subBranch->head= NULL;
-				current->subBranch->current=NULL;
-				current->subBranch->prevBranch=realCurrent;
-				current->subBranch->subBranch=NULL;
-				current->subBranch->head=NULL;
-				current->subBranch->current=NULL;
+				current->subBranch = AddSubBranch(realCurrent,JARRAY);
 				current = current->subBranch;
-				
+
 				break;
 			}
 			case LIST_END:
@@ -424,8 +373,6 @@ void JSON_Parse(char *json, struct Json_Branch* jBranch, struct Error_Handler *e
 							isKey = true;
 						}
 					} else {
-						//assert(current);
-						//assert(current->current);
 						current->current->value = S32(value);
 						isKey = false;
 					}
@@ -438,6 +385,27 @@ void JSON_Parse(char *json, struct Json_Branch* jBranch, struct Error_Handler *e
 			}
 		}
 	}
+}
+
+struct Json_Branch *FindByKey(s32* key,struct Json_Branch *branch)
+{
+	struct Json_Branch *result = branch;
+	struct Json_Branch *current = branch->subBranch;
+	bool found = false;
+	int count = 0;
+
+	switch(current->type)
+	{
+		case JARRAY:
+		{
+			current = current->head->subBranch->head->next;
+
+			printf("%s\n",current->value);
+			break;
+		}
+	}
+
+	return result;
 }
 
 struct JSON_Token GetJSONToken(struct JSON_Tokenizer *jsonTokenizer)
@@ -531,14 +499,11 @@ struct Json_Branch *Json_DelTree(struct Json_Branch* branch)
 		{
 			if (retBranch->key)
 			{
-				//printf("Deleted key: %s\n", retBranch->key);
 				Free(retBranch->key);
 				retBranch->key=NULL;
 			}
 			if (retBranch->value)
 			{
-				//printf("Deleted value: %s\n", retBranch->value);
-
 				Free(retBranch->value);
 				retBranch->value=NULL;
 			}
@@ -551,19 +516,15 @@ struct Json_Branch *Json_DelTree(struct Json_Branch* branch)
 	{
 		if (retTree->key)
 		{
-
-			//printf("Deleted key: %s\n", retTree->key);
 			Free(retTree->key);
 			retTree->key=NULL;
 		}
 		if (retTree->value)
 		{
-			//printf("Deleted value: %s\n", retTree->value);
 			Free(retTree->value);
 			retTree->value=NULL;
 		}
 
-		//printf("Deleted Tree\n");
 		Free(retTree);
 		retTree=NULL;
 	}
@@ -587,13 +548,11 @@ struct Json_Branch* Json_DelBranch(struct Json_Branch* branch)
 		{
 			if (retBranch->key)
 			{
-				//printf("Deleted key: %s\n", retBranch->key);
 				Free(retBranch->key);
 				retBranch->key=NULL;
 			}
 			if (retBranch->value)
 			{
-				//printf("Deleted value: %s\n", retBranch->value);
 				Free(retBranch->value);
 				retBranch->value=NULL;
 			}
@@ -606,13 +565,11 @@ struct Json_Branch* Json_DelBranch(struct Json_Branch* branch)
 	{
 		if (retTree->key)
 		{
-			//printf("Deleted key: %s\n", retTree->key);
 			Free(retTree->key);
 			retTree->key=NULL;
 		}
 		if (retTree->value)
 		{
-			//printf("Deleted value: %s\n", retTree->value);
 			Free(retTree->value);
 			retTree->value=NULL;
 		}
@@ -752,6 +709,35 @@ struct Json_Branch* Json_GetJsonNodeFromKey(struct Json_Branch* branch, struct a
 }
 #endif
 
+
+void GetBranchType(struct Json_Branch *branch)
+{
+	switch(branch->type)
+	{
+		case JNONE:
+		{
+			printf("NO TYPE\n");
+			break;
+		}
+		case JLIST:
+		{
+			printf("Json type\n");
+			break;
+		}
+		case JDICTIONARY:
+		{
+			printf("Dictionary type\n");
+			break;
+		}
+		case JARRAY:
+		{
+			printf("JArray type\n");
+			break;
+		}
+	}
+
+	return ;
+}
 
 void Json_Free(struct Json_Branch* branch)
 {
