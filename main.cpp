@@ -6,7 +6,7 @@ int main()
 	struct Json_Branch branch = {}; 
 	int fileSize = 0;
 	s32 *jsonFileContents  = NULL;
-	FILE *jsonFilePointer = fopen("example_1.json","rb");
+	FILE *jsonFilePointer = fopen("news.json","rb");
 
 	if (jsonFilePointer)
 	{
@@ -19,17 +19,28 @@ int main()
 
 		JSON_Parse(jsonFileContents,&branch,NULL);
 
-		if (branch.subBranch)
+		struct Json_Branch *key = NULL;
+
+		#if 0
+		key = FindByKey("_id", branch.subBranch);
+
+		if (key->value)
 		{
-			struct Json_Branch *items =  branch.subBranch->head;
-
-			while (items != NULL)
-			{
-				printf("%s\n", items->value);
-				items = items->next;
-			}
-
+			printf("%s\n",key->value);
 		}
+		#endif
+
+		JsonPrintAll(branch.subBranch);
+
+		/*
+		while(current)
+		{
+			printf("key: %s\n", current->key);
+			current = current->next;
+		}
+		*/
+
+		
 
 		if (jsonFileContents)
 		{

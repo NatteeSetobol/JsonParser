@@ -387,10 +387,11 @@ void JSON_Parse(char *json, struct Json_Branch* jBranch, struct Error_Handler *e
 	}
 }
 
-struct Json_Branch *FindByKey(s32* key,struct Json_Branch *branch)
+
+void JsonPrintAll(struct Json_Branch *branch)
 {
 	struct Json_Branch *result = branch;
-	struct Json_Branch *current = branch->subBranch;
+	struct Json_Branch *current = branch;
 	bool found = false;
 	int count = 0;
 
@@ -398,9 +399,137 @@ struct Json_Branch *FindByKey(s32* key,struct Json_Branch *branch)
 	{
 		case JARRAY:
 		{
-			current = current->head->subBranch->head->next;
+			current = current->head;
+			while (current)
+			{
+				if (current != NULL)
+				{
+					if (current->subBranch)
+					{
+						JsonPrintAll(current->subBranch);
+					}
 
-			printf("%s\n",current->value);
+					current = current->next;
+				}
+			}
+			break;
+		}
+		case JLIST:
+		{
+			if (current->head)
+			{
+
+				current = current->head;
+
+				if (current->value)
+				{
+					printf("key: %s, value: %s\n", current->key, current->value);
+				} else {
+					printf("key: %s\n", current->key);
+					if (current->subBranch)
+					{
+						JsonPrintAll(current->subBranch);
+					}
+
+				}
+
+				JsonPrintAll(current);
+			}
+			break;
+		}
+		case JDICTIONARY:
+		{
+			if (current->next)
+			{
+				current = current->next;
+				if (current->value)
+				{
+					printf("key: %s, value: %s\n", current->key, current->value);
+				} else {
+					printf("key: %s\n", current->key);
+					if (current->subBranch)
+					{
+						JsonPrintAll(current->subBranch);
+					}
+				}
+
+				JsonPrintAll(current);
+			}
+			break;
+		}
+	}
+
+	return ;
+}
+
+
+struct Json_Branch *FindByKey(s32* key,struct Json_Branch *branch)
+{
+	struct Json_Branch *result = branch;
+	struct Json_Branch *current = branch;
+	bool found = false;
+	int count = 0;
+
+	switch(current->type)
+	{
+		case JARRAY:
+		{
+			current = current->head;
+			while (current)
+			{
+				if (current != NULL)
+				{
+					if (current->subBranch)
+					{
+						FindByKey(key,current->subBranch);
+					}
+
+					current = current->next;
+				}
+			}
+			break;
+		}
+		case JLIST:
+		{
+			if (current->head)
+			{
+
+				current = current->head;
+
+				if (current->value)
+				{
+					printf("key: %s, value: %s\n", current->key, current->value);
+				} else {
+					printf("key: %s\n", current->key);
+					if (current->subBranch)
+					{
+						FindByKey(key,current->subBranch);
+					}
+
+				}
+
+				FindByKey(key,current);
+			}
+			break;
+		}
+		case JDICTIONARY:
+		{
+			if (current->next)
+			{
+				current = current->next;
+				if (current->value)
+				{
+					printf("key: %s, value: %s\n", current->key, current->value);
+				} else {
+					printf("key: %s\n", current->key);
+					if (current->subBranch)
+					{
+						FindByKey(key,current->subBranch);
+					}
+				}
+
+				FindByKey(key,current);
+			}
 			break;
 		}
 	}
