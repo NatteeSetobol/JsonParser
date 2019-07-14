@@ -463,12 +463,23 @@ void JsonPrintAll(struct Json_Branch *branch)
 }
 
 
-struct Json_Branch *FindByKey(s32* key,struct Json_Branch *branch)
+struct Json_Results
 {
-	struct Json_Branch *result = branch;
+	bool32 success;
+	struct marray items;
+};
+
+struct Json_Results *FindByKey(s32* key,struct Json_Branch *branch, struct Json_Results *savedResult)
+{
+	struct Json_Results *result = NULL;
 	struct Json_Branch *current = branch;
 	bool found = false;
 	int count = 0;
+
+	if (savedResult)
+	{
+		result = savedResult;
+	}
 
 	switch(current->type)
 	{
@@ -481,7 +492,13 @@ struct Json_Branch *FindByKey(s32* key,struct Json_Branch *branch)
 				{
 					if (current->subBranch)
 					{
-						FindByKey(key,current->subBranch);
+						result = FindByKey(key,current->subBranch, result);
+						/*
+						if (result)
+						{
+							break;
+						}
+						*/
 					}
 
 					current = current->next;
@@ -493,22 +510,49 @@ struct Json_Branch *FindByKey(s32* key,struct Json_Branch *branch)
 		{
 			if (current->head)
 			{
-
 				current = current->head;
 
 				if (current->value)
 				{
-					printf("key: %s, value: %s\n", current->key, current->value);
+				///	printf("key: %s, value: %s\n", current->key, current->value);
+					if (StrCmp(current->key, key)) // && result == NULL)
+					{
+						if (result  == NULL) 
+						{
+							result = (struct Json_Results*) MemoryRaw(sizeof(struct Json_Results));
+							result->success = true;
+						}
+
+						if (current->value)
+						{
+							s32 *newValue = S32(current->value);
+							AddToMArray(&result->items, newValue);
+						}
+					}
 				} else {
-					printf("key: %s\n", current->key);
+					//printf("key: %s\n", current->key);
+					if (StrCmp(current->key,key))
+					{
+						if (result  == NULL) 
+						{
+							result = (struct Json_Results*) MemoryRaw(sizeof(struct Json_Results));
+							result->success = true;
+						}
+						if (current->value)
+						{
+							s32 *newValue = S32(current->value);
+							AddToMArray(&result->items, newValue);
+						}
+
+					}
+
 					if (current->subBranch)
 					{
-						FindByKey(key,current->subBranch);
+						result = FindByKey(key,current->subBranch,result);
 					}
 
 				}
-
-				FindByKey(key,current);
+				result = FindByKey(key,current,result);
 			}
 			break;
 		}
@@ -519,16 +563,48 @@ struct Json_Branch *FindByKey(s32* key,struct Json_Branch *branch)
 				current = current->next;
 				if (current->value)
 				{
-					printf("key: %s, value: %s\n", current->key, current->value);
+				//	printf("key: %s, value: %s\n", current->key, current->value);
+					if (StrCmp(current->key,key) )
+					{
+						if (result  == NULL) 
+						{
+							result = (struct Json_Results*) MemoryRaw(sizeof(struct Json_Results));
+							result->success = true;
+						}
+
+						if (current->value)
+						{
+							s32 *newValue = S32(current->value);
+							AddToMArray(&result->items, newValue);
+						}
+
+					}
+
 				} else {
-					printf("key: %s\n", current->key);
+					//printf("key: %s\n", current->key);
+					if (StrCmp(current->key,key) )
+					{
+						if (result  == NULL) 
+						{
+							result = (struct Json_Results*) MemoryRaw(sizeof(struct Json_Results));
+							result->success = true;
+						}
+
+						if (current->value)
+						{
+							s32 *newValue = S32(current->value);
+							AddToMArray(&result->items, newValue);
+						}
+
+					}
+
 					if (current->subBranch)
 					{
-						FindByKey(key,current->subBranch);
+						result = FindByKey(key,current->subBranch,result);
 					}
 				}
 
-				FindByKey(key,current);
+				result = FindByKey(key,current,result);
 			}
 			break;
 		}

@@ -14,23 +14,31 @@ int main()
 		fileSize = ftell(jsonFilePointer);
 
 		jsonFileContents = (s32*) MemoryRaw(fileSize+1);
-		rewind(jsonFilePointer);
+		rewind(jsonFilePointer`);
 		fread(jsonFileContents,1,fileSize,jsonFilePointer);
 
 		JSON_Parse(jsonFileContents,&branch,NULL);
 
-		struct Json_Branch *key = NULL;
+		struct Json_Results *key = NULL;
 
-		#if 0
-		key = FindByKey("_id", branch.subBranch);
+		#if 1
+		key = FindByKey("movie", branch.subBranch, NULL);
 
-		if (key->value)
+		if (key)
 		{
-			printf("%s\n",key->value);
+			for (int i=0;i < key->items.count;i++)
+			{
+				s32 *value = (s32*) GetFromMArray(&key->items,i);
+
+				if (value)
+				{
+					printf("%s\n", value);
+				}
+			}
 		}
 		#endif
 
-		JsonPrintAll(branch.subBranch);
+	//	JsonPrintAll(branch.subBranch);
 
 		/*
 		while(current)
