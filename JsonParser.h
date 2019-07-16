@@ -469,7 +469,9 @@ struct Json_Results
 	struct marray items;
 };
 
-struct Json_Results *FindByKey(s32* key,struct Json_Branch *branch, struct Json_Results *savedResult)
+//NOTES(): Need to find a way to seperate each results for each key rather than bundling it up into one array.
+
+struct Json_Results *JSON_FindByKeys(struct marray *keys,struct Json_Branch *branch, struct Json_Results *savedResult)
 {
 	struct Json_Results *result = NULL;
 	struct Json_Branch *current = branch;
@@ -492,7 +494,193 @@ struct Json_Results *FindByKey(s32* key,struct Json_Branch *branch, struct Json_
 				{
 					if (current->subBranch)
 					{
-						result = FindByKey(key,current->subBranch, result);
+						result = JSON_FindByKeys(keys,current->subBranch, result);
+					}
+
+					current = current->next;
+				}
+			}
+			break;
+		}
+		case JLIST:
+		{
+			if (current->head)
+			{
+				current = current->head;
+
+				if (current->value)
+				{	
+					
+					for (int keyIndex = 0; keyIndex < keys->count; keyIndex++)
+					{
+						s32 *key = (s32*) GetFromMArray(keys,keyIndex);
+
+						if (StrCmp(current->key, key)) 
+						{
+							if (result  == NULL) 
+							{
+								result = (struct Json_Results*) MemoryRaw(sizeof(struct Json_Results));
+								result->success = true;
+							}
+
+							if (current->value)
+							{
+								s32 *newValue = S32(current->value);
+								AddToMArray(&result->items, newValue);
+
+							} else {
+								if (current->subBranch)
+								{
+									AddToMArray(&result->items,current->subBranch );
+								}
+							}
+
+						}
+					}
+				} else {
+
+					for (int keyIndex = 0; keyIndex < keys->count; keyIndex++)
+					{
+						s32 *key = (s32*) GetFromMArray(keys,keyIndex);
+
+						if (StrCmp(current->key, key))
+						{
+							if (result  == NULL) 
+							{
+								result = (struct Json_Results*) MemoryRaw(sizeof(struct Json_Results));
+								result->success = true;
+							}
+
+							if (current->value)
+							{
+								s32 *newValue = S32(current->value);
+								AddToMArray(&result->items, newValue);
+
+							} else {
+								if (current->subBranch)
+								{
+									AddToMArray(&result->items,current->subBranch );
+								}
+							}
+
+						}
+					}
+					if (current->subBranch)
+					{
+						result = JSON_FindByKeys(keys,current->subBranch,result);
+					}
+
+				}
+				result = JSON_FindByKeys(keys,current,result);
+			}
+			break;
+		}
+		case JDICTIONARY:
+		{
+			if (current->next)
+			{
+				current = current->next;
+				if (current->value)
+				{
+
+					for (int keyIndex = 0; keyIndex < keys->count; keyIndex++)
+					{
+						s32 *key = (s32*) GetFromMArray(keys,keyIndex);
+						
+						if (StrCmp(current->key, key))
+						{
+							if (result  == NULL) 
+							{
+								result = (struct Json_Results*) MemoryRaw(sizeof(struct Json_Results));
+								result->success = true;
+							}
+
+							if (current->value)
+							{
+								s32 *newValue = S32(current->value);
+								AddToMArray(&result->items, newValue);
+
+							} else {
+								if (current->subBranch)
+								{
+									AddToMArray(&result->items,current->subBranch );
+								}
+							}
+
+						}
+					}
+					if (current->subBranch)
+					{
+						result = JSON_FindByKeys(keys,current->subBranch,result);
+					}
+
+				} else {
+
+					for (int keyIndex = 0; keyIndex < keys->count; keyIndex++)
+					{
+						s32 *key = (s32*) GetFromMArray(keys,keyIndex);
+
+						if (StrCmp(current->key, key)) 
+						{
+							if (result  == NULL) 
+							{
+								result = (struct Json_Results*) MemoryRaw(sizeof(struct Json_Results));
+								result->success = true;
+							}
+
+							if (current->value)
+							{
+								s32 *newValue = S32(current->value);
+								AddToMArray(&result->items, newValue);
+
+							} else {
+								if (current->subBranch)
+								{
+									AddToMArray(&result->items,current->subBranch );
+								}
+							}
+
+						}
+					}
+					if (current->subBranch)
+					{
+						result = JSON_FindByKeys(keys,current->subBranch,result);
+					}
+				}
+
+				result = JSON_FindByKeys(keys,current,result);
+			}
+			break;
+		}
+	}
+
+	return result;
+}
+
+struct Json_Results *JSON_FindByKey(s32* key,struct Json_Branch *branch, struct Json_Results *savedResult)
+{
+	struct Json_Results *result = NULL;
+	struct Json_Branch *current = branch;
+	bool found = false;
+	int count = 0;
+
+	if (savedResult)
+	{
+		result = savedResult;
+	}
+
+	switch(current->type)
+	{
+		case JARRAY:
+		{
+			current = current->head;
+			while (current)
+			{
+				if (current != NULL)
+				{
+					if (current->subBranch)
+					{
+						result = JSON_FindByKey(key,current->subBranch, result);
 						/*
 						if (result)
 						{
@@ -527,7 +715,14 @@ struct Json_Results *FindByKey(s32* key,struct Json_Branch *branch, struct Json_
 						{
 							s32 *newValue = S32(current->value);
 							AddToMArray(&result->items, newValue);
+
+						} else {
+							if (current->subBranch)
+							{
+								AddToMArray(&result->items,current->subBranch );
+							}
 						}
+
 					}
 				} else {
 					//printf("key: %s\n", current->key);
@@ -542,17 +737,24 @@ struct Json_Results *FindByKey(s32* key,struct Json_Branch *branch, struct Json_
 						{
 							s32 *newValue = S32(current->value);
 							AddToMArray(&result->items, newValue);
+
+						} else {
+							if (current->subBranch)
+							{
+								AddToMArray(&result->items,current->subBranch );
+							}
 						}
+
 
 					}
 
 					if (current->subBranch)
 					{
-						result = FindByKey(key,current->subBranch,result);
+						result = JSON_FindByKey(key,current->subBranch,result);
 					}
 
 				}
-				result = FindByKey(key,current,result);
+				result = JSON_FindByKey(key,current,result);
 			}
 			break;
 		}
@@ -576,6 +778,12 @@ struct Json_Results *FindByKey(s32* key,struct Json_Branch *branch, struct Json_
 						{
 							s32 *newValue = S32(current->value);
 							AddToMArray(&result->items, newValue);
+
+						} else {
+							if (current->subBranch)
+							{
+								AddToMArray(&result->items,current->subBranch );
+							}
 						}
 
 					}
@@ -594,17 +802,22 @@ struct Json_Results *FindByKey(s32* key,struct Json_Branch *branch, struct Json_
 						{
 							s32 *newValue = S32(current->value);
 							AddToMArray(&result->items, newValue);
+						} else {
+							if (current->subBranch)
+							{
+								AddToMArray(&result->items,current->subBranch );
+							}
 						}
 
 					}
 
 					if (current->subBranch)
 					{
-						result = FindByKey(key,current->subBranch,result);
+						result = JSON_FindByKey(key,current->subBranch,result);
 					}
 				}
 
-				result = FindByKey(key,current,result);
+				result = JSON_FindByKey(key,current,result);
 			}
 			break;
 		}
@@ -783,137 +996,6 @@ struct Json_Branch* Json_DelBranch(struct Json_Branch* branch)
 	}
 	return branch;
 }
-#if 0
-struct Json_Branch* Json_GetJsonNodeFromKey(struct Json_Branch* branch, struct array* list)
-{
-	struct Json_Branch *resultBranch = NULL;
-	struct Json_Branch *branchStart = NULL;
-	struct Json_Branch *branchHead= NULL;
-	bool foundFirst = false;
-	int listIndex = 0;
-
-	branchStart = branch;
-	branchHead = branch->head;
-
-	while (branch != NULL)
-	{
-		if (branchHead == NULL)
-		{
-			if (branch)
-			{
-				if (branch->subBranch)
-				{
-					branchHead = branch->subBranch->head;
-					branch = branch->subBranch;
-				} else {
-					//break;
-				}
-			}
-		} else {
-			if (branchHead)
-			{
-				if (branchHead->key != NULL)
-				{
-					char *gotFromList = (char*) GetFromArray(list,listIndex);
-					bool foundKey = false;
-
-					if (gotFromList)
-					{
-						//printf("comparing %s with %s\n", branchHead->key,gotFromList);
-						if (strcmp(gotFromList, branchHead->key) == 0)
-						{
-							if (foundFirst == false)
-							{
-								foundFirst = true;
-							}
-							foundKey = true;	
-							//printf("found %s\n", branchHead->key);
-							
-							resultBranch = branchHead;
-
-							if (branchHead->subBranch)
-							{
-								if (branchHead->subBranch->type == JARRAY)
-								{
-									branch = branchHead->subBranch;
-									branchHead = branch->head;
-
-									if (branchHead)
-									{
-										branch = branchHead->subBranch;
-
-										if (branch)
-										{
-											branchHead = branch->head;
-
-										}
-									}
-
-								} else{
-									branch = branchHead->subBranch;
-									branchHead = branch->head;
-
-								}
-							} else {
-								if (branch->prevBranch)
-								{
-									if (branch->prevBranch->head)
-									{
-										//printf("prev branch type is %i\n", branch->prevBranch->head->type);
-									}
-								}
-								break;
-							}
-#if 0
-							if (branchHead->subBranch)
-							{
-								if (branchHead->subBranch->head)
-								{
-									branch = branchHead->subBranch;
-									branchHead = branchHead->subBranch->head;
-									
-
-								}
-							}
-							#endif
-							listIndex++;
-						
-						} else {
-							if (foundFirst == true)
-							{
-								//break;
-							}
-						}
-					} else {
-						//printf("no more items on the list\n");
-					}
-					if (foundKey == false)
-					{
-						if (branchHead->next)
-						{
-							branchHead = branchHead->next;
-						} else {
-							//branch = branch->prevBranch;
-							//branchHead = branch->current;
-							break;
-						}
-					
-					}
-
-				} 
-				
-				if (branch->head == NULL && branch->subBranch == NULL)
-				{
-					break;
-				}
-
-			}
-		}
-	}
-	return resultBranch;
-}
-#endif
-
 
 void GetBranchType(struct Json_Branch *branch)
 {

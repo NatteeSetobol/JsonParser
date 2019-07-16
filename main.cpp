@@ -14,40 +14,39 @@ int main()
 		fileSize = ftell(jsonFilePointer);
 
 		jsonFileContents = (s32*) MemoryRaw(fileSize+1);
-		rewind(jsonFilePointer`);
+		rewind(jsonFilePointer);
 		fread(jsonFileContents,1,fileSize,jsonFilePointer);
 
 		JSON_Parse(jsonFileContents,&branch,NULL);
 
 		struct Json_Results *key = NULL;
 
-		#if 1
-		key = FindByKey("movie", branch.subBranch, NULL);
 
+		struct marray keys = {};
+
+		AddToMArray(&keys,"thumbnail");
+		AddToMArray(&keys,"movie");
+
+		key = JSON_FindByKeys(&keys, branch.subBranch, NULL);
+		
 		if (key)
 		{
+			
 			for (int i=0;i < key->items.count;i++)
 			{
-				s32 *value = (s32*) GetFromMArray(&key->items,i);
-
+				s32 *theKey = (s32*) GetFromMArray(&key->items,i);
+				printf("%s\n", theKey);
+				/*
+				struct Json_Branch *value = (struct Json_Branch *) GetFromMArray(&key->items,i);
 				if (value)
 				{
-					printf("%s\n", value);
+					printf("%s\n",value->head->subBranch->head->next->value);
+					//GetBranchType(value->head->subBranch->head);
 				}
+				*/
 			}
+			
 		}
-		#endif
-
-	//	JsonPrintAll(branch.subBranch);
-
-		/*
-		while(current)
-		{
-			printf("key: %s\n", current->key);
-			current = current->next;
-		}
-		*/
-
 		
 
 		if (jsonFileContents)
@@ -55,6 +54,7 @@ int main()
 			Free(jsonFileContents);
 			jsonFileContents=NULL;
 		}
+
 		fclose(jsonFilePointer);
 	}
 
